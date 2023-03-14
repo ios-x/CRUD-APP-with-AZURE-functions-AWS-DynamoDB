@@ -1,0 +1,150 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Azure Function app."
+      }
+    },
+    "awsAccessKeyId": {
+      "type": "string",
+      "metadata": {
+        "description": "Your AWS_ACCESS_KEY_ID"
+      }
+    },
+    "awsSecretAccessKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Your AWS_SECRET_ACCESS_KEY"
+      }
+    },
+    "awsRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "Your AWS_Region"
+      }
+    },
+    "dynamodbTableName": {
+      "type": "string",
+      "metadata": {
+        "description": "Your dynamodb TableName"
+      }
+    }
+  },
+  "variables": {
+    "hostingPlanName": "[parameters('functionAppName')]",
+    "applicationInsightsName": "[parameters('functionAppName')]",
+    "storageAccountName": "[parameters('functionAppName')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-05-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "Storage"
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('hostingPlanName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic",
+        "size": "Y1",
+        "family": "Y"
+      },
+      "properties": {
+        "computeMode": "Dynamic"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('applicationInsightsName')]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "[format('hidden-link:{0}', resourceId('Microsoft.Web/sites', variables('applicationInsightsName')))]": "Resource"
+      },
+      "properties": {
+        "Application_Type": "web"
+      },
+      "kind": "web"
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('functionAppName')]",
+      "location": "[resourceGroup().location]",
+      "kind": "functionapp",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey]"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-09-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-09-01').keys[0].value)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(parameters('functionAppName'))]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "node"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "~18"
+            },
+            {
+              "name": "AWS_ACCESS_KEY_ID",
+              "value": "[parameters('awsAccessKeyId')]"
+            },
+            {
+              "name": "AWS_SECRET_ACCESS_KEY",
+              "value": "[parameters('awsSecretAccessKey')]"
+            },
+            {
+              "name": "AWS_REGION",
+              "value": "[parameters('awsRegion')]"
+            },
+            {
+              "name": "DynamoDB_Table_Name",
+              "value": "[parameters('dynamodbTableName')]"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ]
+    }
+    
+  ]
+}
+
