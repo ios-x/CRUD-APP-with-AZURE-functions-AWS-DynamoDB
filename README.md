@@ -33,7 +33,7 @@ func start
 10. Test the generated api using postman or any api tool you fill conformtable with.
 
 ## Deploy to Azure
-1. [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fios-x%2Ftestappdeploy%2Fmain%2Fazuredeploy.json)
+1. [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fios-x%2FCRUD-APP-with-AZURE-functions-AWS-DynamoDB%2Fmain%2Fazuredeploy.json)
 2. Clone this repository 
 3. To deploy your functions to the function app, navigate to the Azure icon found in the explorer area in VS code
 4. Go to the workspace area, select your project folder and select "Deploy" and choose "Deploy to Function App." You will be prompted to select the function app to which you want to deploy your functions.
